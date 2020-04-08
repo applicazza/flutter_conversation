@@ -1,3 +1,4 @@
+export 'conversation_input_widget.dart';
 export 'conversation_widget.dart';
 export 'message_body_widget.dart';
 export 'message_info_widget.dart';

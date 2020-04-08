@@ -15,6 +15,10 @@ final GlobalKey<ConversationWidgetState> _key = GlobalKey<ConversationWidgetStat
 ConversationWidget(  
   key: _key,  
   messages: _messages,  
-  participants: _participants,  
+  participants: _participants,
+  sendMessageCallback: (body) async {
+    await Future.delayed(Duration(seconds: 3));
+    return true;
+  },
 ),
 ```

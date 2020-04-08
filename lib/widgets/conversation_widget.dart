@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+typedef SendMessageCallback = Future<bool> Function(String body);
+
 class ConversationWidget extends StatefulWidget {
   final List<Message> messages;
 
@@ -15,10 +17,13 @@ class ConversationWidget extends StatefulWidget {
 
   final BubbleStyle otherBubbleStyle;
 
+  final SendMessageCallback sendMessageCallback;
+
   ConversationWidget({
     Key key,
     @required this.messages,
     @required this.participants,
+    @required this.sendMessageCallback,
     this.myBubbleStyle = const BubbleStyle(
       nip: BubbleNip.rightBottom,
       color: Color.fromARGB(255, 225, 255, 199),
@@ -48,34 +53,36 @@ class ConversationWidgetState extends State<ConversationWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return Column(
       children: <Widget>[
-        ScrollablePositionedList.builder(
-          itemBuilder: (context, index) {
-            final locale = Localizations.localeOf(context).toString();
-            final dateFormatter = DateFormat.yMd(locale);
-            final messages = widget.messages;
-            final message = messages[index];
-            final nextMessage = index + 1 != messages.length ? messages[index + 1] : null;
-            return Column(
-              children: <Widget>[
-                MessageWidget(
-                  message: message,
-                  myBubbleStyle: widget.myBubbleStyle,
-                  otherBubbleStyle: widget.otherBubbleStyle,
-                  sender: _participantsMap[message.from],
-                ),
-                nextMessage != null && !_isSameDayMessage(message, nextMessage)
-                    ? SystemMessageWidget(
-                        body: dateFormatter.format(nextMessage.sentAt.toLocal()),
-                      )
-                    : Container(),
-              ],
-            );
-          },
-          itemCount: widget.messages.length,
-          itemPositionsListener: _itemPositionsListener,
-          itemScrollController: _itemScrollController,
+        Expanded(
+          child: ScrollablePositionedList.builder(
+            itemBuilder: (context, index) {
+              final locale = Localizations.localeOf(context).toString();
+              final dateFormatter = DateFormat.yMd(locale);
+              final messages = widget.messages;
+              final message = messages[index];
+              final nextMessage = index + 1 != messages.length ? messages[index + 1] : null;
+              return Column(
+                children: <Widget>[
+                  MessageWidget(
+                    message: message,
+                    myBubbleStyle: widget.myBubbleStyle,
+                    otherBubbleStyle: widget.otherBubbleStyle,
+                    sender: _participantsMap[message.from],
+                  ),
+                  nextMessage != null && !_isSameDayMessage(message, nextMessage)
+                      ? SystemMessageWidget(
+                          body: dateFormatter.format(nextMessage.sentAt.toLocal()),
+                        )
+                      : Container(),
+                ],
+              );
+            },
+            itemCount: widget.messages.length,
+            itemPositionsListener: _itemPositionsListener,
+            itemScrollController: _itemScrollController,
+          ),
         ),
         _showScrollDown
             ? Align(
@@ -102,6 +109,9 @@ class ConversationWidgetState extends State<ConversationWidget> {
                 ),
               )
             : Container(),
+        ConversationInputWidget(
+          sendMessageCallback: widget.sendMessageCallback,
+        ),
       ],
     );
   }
