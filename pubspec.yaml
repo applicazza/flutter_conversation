@@ -1,0 +1,19 @@
+name: conversation
+description: Conversation Widget For Flutter.
+version: 0.0.1
+homepage: https://github.com/applicazza/flutter_conversation
+
+environment:
+  sdk: ">=2.1.0 <3.0.0"
+
+dependencies:
+  bubble: ^1.1.9+1
+  flutter:
+    sdk: flutter
+  intl: ^0.16.0
+  meta: ^1.1.8
+  scrollable_positioned_list: ^0.1.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
