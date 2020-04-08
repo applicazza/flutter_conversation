@@ -1,9 +1,14 @@
 # Conversation
   
-Conversation Widget For Flutter.  
+Conversation Widget For Flutter.
+
+[![Pub Version](https://img.shields.io/pub/v/conversation)](https://pub.dev/packages/conversation)
+[![GitHub](https://img.shields.io/github/license/applicazza/flutter_conversation)](https://github.com/applicazza/flutter_conversation/blob/master/LICENSE)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/applicazza/flutter_conversation)](https://github.com/applicazza/flutter_conversation/releases)
+
 
 ## Demo
-![enter image description here](https://media.giphy.com/media/cLkGCzyvhzBDQJyA0G/giphy.gif)
+![Demo GIF](https://media.giphy.com/media/cLkGCzyvhzBDQJyA0G/giphy.gif)
   
 ## Getting Started  
 
