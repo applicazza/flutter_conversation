@@ -9,16 +9,19 @@ class Message {
 
   final int from;
 
-  bool isDelivered;
-
-  bool isViewed;
+  MessageState state;
 
   Message({
     @required this.id,
     @required this.sentAt,
     @required this.body,
     @required this.from,
-    this.isDelivered = false,
-    this.isViewed = false,
+    @required this.state,
   });
+}
+
+enum MessageState {
+  PENDING,
+  DELIVERED,
+  VIEWED,
 }

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 typedef SendMessageCallback = Future<bool> Function(String body);
+typedef MessageViewedCallback = Future<void> Function(Message message, int index);
 
 class ConversationWidget extends StatefulWidget {
   final List<Message> messages;
@@ -19,11 +20,14 @@ class ConversationWidget extends StatefulWidget {
 
   final SendMessageCallback sendMessageCallback;
 
+  final MessageViewedCallback messageViewedCallback;
+
   ConversationWidget({
     Key key,
     @required this.messages,
     @required this.participants,
     @required this.sendMessageCallback,
+    @required this.messageViewedCallback,
     this.myBubbleStyle = const BubbleStyle(
       nip: BubbleNip.rightBottom,
       color: Color.fromARGB(255, 225, 255, 199),
@@ -36,6 +40,9 @@ class ConversationWidget extends StatefulWidget {
     ),
   })  : assert(myBubbleStyle != null),
         assert(otherBubbleStyle != null),
+        assert(sendMessageCallback != null),
+        assert(sendMessageCallback != null),
+        assert(messageViewedCallback != null),
         super(key: key);
 
   @override
@@ -43,6 +50,8 @@ class ConversationWidget extends StatefulWidget {
 }
 
 class ConversationWidgetState extends State<ConversationWidget> {
+  final Set<int> _notifiedMessageIds = Set<int>();
+
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
 
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -56,59 +65,65 @@ class ConversationWidgetState extends State<ConversationWidget> {
     return Column(
       children: <Widget>[
         Expanded(
-          child: ScrollablePositionedList.builder(
-            itemBuilder: (context, index) {
-              final locale = Localizations.localeOf(context).toString();
-              final dateFormatter = DateFormat.yMd(locale);
-              final messages = widget.messages;
-              final message = messages[index];
-              final nextMessage = index + 1 != messages.length ? messages[index + 1] : null;
-              return Column(
-                children: <Widget>[
-                  MessageWidget(
-                    message: message,
-                    myBubbleStyle: widget.myBubbleStyle,
-                    otherBubbleStyle: widget.otherBubbleStyle,
-                    sender: _participantsMap[message.from],
-                  ),
-                  nextMessage != null && !_isSameDayMessage(message, nextMessage)
-                      ? SystemMessageWidget(
-                          body: dateFormatter.format(nextMessage.sentAt.toLocal()),
-                        )
-                      : Container(),
-                ],
-              );
-            },
-            itemCount: widget.messages.length,
-            itemPositionsListener: _itemPositionsListener,
-            itemScrollController: _itemScrollController,
+          child: Stack(
+            children: <Widget>[
+              Scrollbar(
+                child: ScrollablePositionedList.builder(
+                  itemBuilder: (context, index) {
+                    final locale = Localizations.localeOf(context).toString();
+                    final dateFormatter = DateFormat.yMd(locale);
+                    final messages = widget.messages;
+                    final message = messages[index];
+                    final nextMessage = index + 1 != messages.length ? messages[index + 1] : null;
+                    return Column(
+                      children: <Widget>[
+                        MessageWidget(
+                          message: message,
+                          myBubbleStyle: widget.myBubbleStyle,
+                          otherBubbleStyle: widget.otherBubbleStyle,
+                          sender: _participantsMap[message.from],
+                        ),
+                        nextMessage != null && !_isSameDayMessage(message, nextMessage)
+                            ? SystemMessageWidget(
+                                body: dateFormatter.format(nextMessage.sentAt.toLocal()),
+                              )
+                            : Container(),
+                      ],
+                    );
+                  },
+                  itemCount: widget.messages.length,
+                  itemPositionsListener: _itemPositionsListener,
+                  itemScrollController: _itemScrollController,
+                ),
+              ),
+              _showScrollDown
+                  ? Align(
+                      alignment: Alignment.bottomRight,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
+                        child: RawMaterialButton(
+                          child: Icon(
+                            Icons.arrow_downward,
+                            color: Theme.of(context).primaryIconTheme.color,
+                            size: 24.0,
+                          ),
+                          constraints: BoxConstraints(
+                            minWidth: 36.0,
+                            minHeight: 36.0,
+                          ),
+                          elevation: 2.0,
+                          fillColor: Theme.of(context).primaryColor,
+                          onPressed: () {
+                            jumpToLast();
+                          },
+                          shape: CircleBorder(),
+                        ),
+                      ),
+                    )
+                  : Container(),
+            ],
           ),
         ),
-        _showScrollDown
-            ? Align(
-                alignment: Alignment.bottomRight,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: RawMaterialButton(
-                    child: Icon(
-                      Icons.arrow_downward,
-                      color: Theme.of(context).primaryIconTheme.color,
-                      size: 24.0,
-                    ),
-                    constraints: BoxConstraints(
-                      minWidth: 36.0,
-                      minHeight: 36.0,
-                    ),
-                    elevation: 2.0,
-                    fillColor: Theme.of(context).primaryColor,
-                    onPressed: () {
-                      jumpToLast();
-                    },
-                    shape: CircleBorder(),
-                  ),
-                ),
-              )
-            : Container(),
         ConversationInputWidget(
           sendMessageCallback: widget.sendMessageCallback,
         ),
@@ -153,12 +168,23 @@ class ConversationWidgetState extends State<ConversationWidget> {
   void _onItemPositionsChanged() {
     final firstPositionIndex = _itemPositionsListener.itemPositions.value.first.index;
     final lastPositionIndex = _itemPositionsListener.itemPositions.value.last.index;
-    final positionIndex = max(firstPositionIndex, lastPositionIndex);
-    final showScrollDown = positionIndex < widget.messages.length - 1;
+
+    final maxPositionIndex = max(firstPositionIndex, lastPositionIndex);
+    final minPositionIndex = min(firstPositionIndex, lastPositionIndex);
+    final showScrollDown = maxPositionIndex < widget.messages.length - 1;
+
     if (_showScrollDown != showScrollDown) {
       setState(() {
         _showScrollDown = showScrollDown;
       });
+    }
+
+    for (var i = minPositionIndex; i <= maxPositionIndex; i++) {
+      final message = widget.messages[i];
+      if (widget.messages[i].state != MessageState.VIEWED && !_notifiedMessageIds.contains(message.id)) {
+        widget.messageViewedCallback(message, i);
+        _notifiedMessageIds.add(message.id);
+      }
     }
   }
 }

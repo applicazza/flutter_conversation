@@ -49,12 +49,14 @@ class _MessageInfoWidgetState extends State<MessageInfoWidget> {
   }
 
   IconData _getIcon() {
-    if (widget.message.isViewed && widget.message.isDelivered) {
-      return Icons.done_all;
-    } else if (widget.message.isDelivered) {
-      return Icons.done;
-    } else {
-      return Icons.access_time;
+    switch (widget.message.state) {
+      case MessageState.PENDING:
+        return Icons.access_time;
+      case MessageState.DELIVERED:
+        return Icons.done;
+      case MessageState.VIEWED:
+        return Icons.done_all;
     }
+    return Icons.error_outline;
   }
 }

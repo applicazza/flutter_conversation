@@ -60,9 +60,7 @@ class _AppRootState extends State<AppRoot> {
               icon: Icon(Icons.done),
               onPressed: () {
                 setState(() {
-                  final lastMessage = _messages.last;
-                  lastMessage.isDelivered = true;
-                  lastMessage.isViewed = false;
+                  _messages.last.state = MessageState.DELIVERED;
                 });
               },
             ),
@@ -70,9 +68,7 @@ class _AppRootState extends State<AppRoot> {
               icon: Icon(Icons.done_all),
               onPressed: () {
                 setState(() {
-                  final lastMessage = _messages.last;
-                  lastMessage.isDelivered = true;
-                  lastMessage.isViewed = true;
+                  _messages.last.state = MessageState.VIEWED;
                 });
               },
             ),
@@ -82,6 +78,12 @@ class _AppRootState extends State<AppRoot> {
         body: ConversationWidget(
           key: _key,
           messages: _messages,
+          messageViewedCallback: (message, index) async {
+            await Future.delayed(Duration(seconds: 2));
+            setState(() {
+              message.state = MessageState.VIEWED;
+            });
+          },
           participants: _participants,
           sendMessageCallback: (body) async {
             await Future.delayed(Duration(seconds: 3));
@@ -109,7 +111,6 @@ class _AppRootState extends State<AppRoot> {
     final initialSentAt = now.subtract(Duration(days: 300));
 
     return List.generate(length, (index) {
-      final isDelivered = random.nextBool();
       return Message(
         id: from + index + 1,
         body: random.nextBool()
@@ -117,8 +118,7 @@ class _AppRootState extends State<AppRoot> {
             : 'הראשי לימודים ב שתי, ב ובמתן הבהרה המקובל מלא. זאת גם מרצועת הספרות, מה היא כלליים קלאסיים. אחר דת באגים ולחבר. כלל את ריקוד קולנוע העברית, נפלו פולנית קצרמרים דת לוח, ויש או אחרים בקרבת המדינה.',
         from: random.nextInt(3) + 1,
         sentAt: initialSentAt.add(Duration(hours: (from + index))),
-        isDelivered: isDelivered,
-        isViewed: isDelivered && random.nextBool(),
+        state: MessageState.values[random.nextInt(2)],
       );
     });
   }
